@@ -22,17 +22,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = ['Authorization', 'Content-Type']
-
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '192.168.1.100',
+    '192.168.1.110',
+]
 
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'main',
     'v1_api',
     'django.contrib.admin',
@@ -43,7 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders'
+
 ]
 
 MIDDLEWARE = [
@@ -127,7 +129,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = 'static/'
 
 
 REST_FRAMEWORK = {
@@ -137,4 +138,18 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'main.security.CSRFExemptSessionAuthentication',
     ),
+    'EXCEPTION_HANDLER': 'api_v2.exception_handler.custom_exception_handler'
 }
+
+CORS_ALLOWED_ORIGINS = [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+    'http://192.168.1.100:3000',
+    'http://192.168.1.110:3000',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://192.168.1.100:8000',
+    'http://192.168.1.110:8000',
+]
+
+CORS_ALLOW_CREDENTIALS = False

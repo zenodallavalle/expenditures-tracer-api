@@ -1,0 +1,23 @@
+from rest_framework import serializers
+
+from main.models import Category
+from .expenditure import ExpenditureSerializer
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    def __init__(self, *args, include_children=False, **kwargs):
+        self.include_children = include_children
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'db']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # if self.context.get('request', DummyRequest()).method == 'GET' or getattr(self, 'include_children', False):
+        representation['expected_expenditures'] = ExpenditureSerializer(
+            instance.expenditures.filter(is_expected=True), many=True, include_children=True).data
+        representation['actual_expenditures'] = ExpenditureSerializer(
+            instance.expenditures.filter(is_expected=False), many=True, include_children=True).data
+        return representation

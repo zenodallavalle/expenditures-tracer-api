@@ -1,0 +1,2 @@
+class DummyRequest:
+    method = 'DUMMY'
