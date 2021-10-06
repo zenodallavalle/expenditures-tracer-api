@@ -62,7 +62,7 @@ class Expenditure(models.Model):
         to=Database, on_delete=models.CASCADE, related_name='expenditures')
 
     expected_expenditure = models.ForeignKey(
-        to='self', null=True, on_delete=models.SET_NULL, related_name='actual_expenditures')
+        to='self', null=True, empty=True, on_delete=models.SET_NULL, related_name='actual_expenditures')
 
     def save(self, *args, **kwargs):
         self.db = self.category.db
