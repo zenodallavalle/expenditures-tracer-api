@@ -2,6 +2,8 @@ from rest_framework.exceptions import MethodNotAllowed, ParseError, bad_request
 from rest_framework.utils import representation
 from .exceptions import NotAllowedAction
 import json
+from datetime import datetime
+from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from django.http import JsonResponse, Http404
 from django.contrib.auth.models import User
@@ -153,7 +155,11 @@ class ModelViewSetWithoutList(viewsets.ModelViewSet):
         raise NotAllowedAction('list')
 
 
-class DBRelatedViewSetQuerySet(viewsets.ModelViewSet):
+class DBRelatedViewSet(viewsets.ModelViewSet):
+    permission_classes = [DBRelatedPermission]
+    http_method_names = ['options', 'head',
+                         'post', 'patch', 'update', 'delete']
+
     def get_queryset(self):
         queryset = self.model.objects.filter(db__users__in=[self.request.user])
         return queryset
@@ -171,30 +177,39 @@ class DatabaseViewSet(ModelViewSetWithoutList):
     serializer_class = FullDatabaseSerializer
     permission_classes = [DBPermission]
 
+    def _analyze_request_month(self):
+        reference_month = self.request.params.get('reference_month', None)
+        if reference_month:
+            month, year = [int(x.strip())
+                           for x in reference_month.split('-')[:2]]
+        else:
+            n = datetime.now()
+            month = n.month
+            year = n.year
+        min_date = datetime(year, month, 1)
+        max_date = min_date + relativedelta(months=1)
+        self.request.min_date = timezone.make_aware(min_date)
+        self.request.max_date = timezone.make_aware(max_date)
+
     def get_queryset(self):
         queryset = Database.objects.filter(users__in=[self.request.user])
         return queryset
 
+    def retrieve(self, request, *args, **kwargs):
+        self._analyze_request_month()
+        return super().retrieve(request, *args, **kwargs)
 
-class CashViewSet(DBRelatedViewSetQuerySet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
+
+class CashViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
     model = Cash
     serializer_class = CashSerializer
-    permission_classes = [DBRelatedPermission]
-    http_method_names = ['options', 'head',
-                         'post', 'patch', 'update', 'delete']
 
 
-class CategoryViewSet(DBRelatedViewSetQuerySet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
+class CategoryViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
     model = Category
     serializer_class = CategorySerializer
-    permission_classes = [DBRelatedPermission]
-    http_method_names = ['options', 'head',
-                         'post', 'patch', 'update', 'delete']
 
 
-class ExpenditureViewSet(DBRelatedViewSetQuerySet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
+class ExpenditureViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
     model = Expenditure
     serializer_class = ExpenditureSerializer
-    permission_classes = [DBRelatedPermission]
-    http_method_names = ['options', 'head',
-                         'post', 'patch', 'update', 'delete']

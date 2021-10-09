@@ -1,8 +1,8 @@
-from rest_framework import serializers
 from main.models import Cash
+from .DateFilterSerializer import DateFilterSerializer
 
 
-class CashSerializer(serializers.ModelSerializer):
+class CashSerializer(DateFilterSerializer):
     def __init__(self, *args, include_children=False, **kwargs):
         self.include_children = include_children
         super().__init__(*args, **kwargs)
