@@ -1,3 +1,4 @@
+from dateutil import relativedelta
 
 
 class DummyRequest:
@@ -16,9 +17,9 @@ def extract_value(obj):
 
 
 def check_precedent_money_is_valid(actual, precedent, field='date'):
-    print(getattr(actual, field), getattr(precedent, field),
-          (getattr(actual, field) - getattr(precedent, field)).days)
-    if (getattr(actual, field) - getattr(precedent, field)).days > 31:
+    actual_date = getattr(actual, field)
+    precedent_date = getattr(precedent, field)
+    if (actual_date - relativedelta.relativedelta(months=1)) > precedent_date:
         return False
     return True
 
