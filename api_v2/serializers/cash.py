@@ -9,4 +9,5 @@ class CashSerializer(DateFilterSerializer):
 
     class Meta:
         model = Cash
-        fields = ['id', 'name', 'value', 'date', 'income', 'db']
+        fields = ['id', 'name', 'value', 'date',
+                  'reference_date', 'income', 'db']

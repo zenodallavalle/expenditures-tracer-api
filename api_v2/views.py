@@ -16,7 +16,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-
+from django.conf import settings
 from .permissions import DBPermission, DBRelatedPermission
 from api_v2.serializers import PrivateUserSerializer, PublicUserSerializer, CategorySerializer, SimpleDatabaseSerializer, FullDatabaseSerializer, CashSerializer, ExpenditureSerializer
 
@@ -146,19 +146,44 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class ModelViewSetWithoutRetrieve(viewsets.ModelViewSet):
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, *args, **kwargs):
+        if settings.DEBUG and settings.DO_NOT_ALTER_REPRESENTATIONS:
+            return super().retrieve(*args, **kwargs)
         raise NotAllowedAction('retrieve')
 
 
 class ModelViewSetWithoutList(viewsets.ModelViewSet):
-    def list(self, request, *args, **kwargs):
+    def _analyze_request_month(self):
+        month = self.request.params.get('month', [None])[0]
+        if month:
+            month, year = [int(x.strip())
+                           for x in month.split('-')[:2]]
+        else:
+            n = datetime.now()
+            month = n.month
+            year = n.year
+        min_date = datetime(year, month, 1)
+        max_date = min_date + relativedelta(months=1)
+        self.request.min_date = timezone.make_aware(min_date)
+        self.request.max_date = timezone.make_aware(max_date)
+
+    def initialize_request(self, request, *args, **kwargs):
+        self._analyze_request_month()
+        return super().initialize_request(request, *args, **kwargs)
+
+    def list(self,  *args, **kwargs):
+        if settings.DEBUG and settings.DO_NOT_ALTER_REPRESENTATIONS:
+            return super().list(*args, **kwargs)
         raise NotAllowedAction('list')
 
 
 class DBRelatedViewSet(viewsets.ModelViewSet):
     permission_classes = [DBRelatedPermission]
-    http_method_names = ['options', 'head',
-                         'post', 'patch', 'update', 'delete']
+    http_method_names = [
+        'options', 'head', 'get', 'post', 'patch', 'update', 'delete'
+    ] if settings.DEBUG and settings.DO_NOT_ALTER_REPRESENTATIONS else [
+        'options', 'head', 'post', 'patch', 'update', 'delete'
+    ]
 
     def get_queryset(self):
         queryset = self.model.objects.filter(db__users__in=[self.request.user])
@@ -177,27 +202,9 @@ class DatabaseViewSet(ModelViewSetWithoutList):
     serializer_class = FullDatabaseSerializer
     permission_classes = [DBPermission]
 
-    def _analyze_request_month(self):
-        reference_month = self.request.params.get('reference_month', None)
-        if reference_month:
-            month, year = [int(x.strip())
-                           for x in reference_month.split('-')[:2]]
-        else:
-            n = datetime.now()
-            month = n.month
-            year = n.year
-        min_date = datetime(year, month, 1)
-        max_date = min_date + relativedelta(months=1)
-        self.request.min_date = timezone.make_aware(min_date)
-        self.request.max_date = timezone.make_aware(max_date)
-
     def get_queryset(self):
         queryset = Database.objects.filter(users__in=[self.request.user])
         return queryset
-
-    def retrieve(self, request, *args, **kwargs):
-        self._analyze_request_month()
-        return super().retrieve(request, *args, **kwargs)
 
 
 class CashViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):

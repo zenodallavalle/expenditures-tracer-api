@@ -9,6 +9,8 @@ from .DateFilterSerializer import DateFilterSerializer
 class ExpenditureSerializer(DateFilterSerializer):
     expected_expenditure = serializers.PrimaryKeyRelatedField(required=False, allow_null=True,
                                                               queryset=Expenditure.objects.filter(is_expected=True))
+    actual_expenditures = serializers.PrimaryKeyRelatedField(
+        read_only=True, many=True)
 
     def __init__(self, *args, include_children=False, **kwargs):
         self.include_children = include_children
@@ -17,13 +19,20 @@ class ExpenditureSerializer(DateFilterSerializer):
     class Meta:
         model = Expenditure
         fields = ['id', 'name', 'value', 'date', 'expected_expenditure',
-                  'is_expected', 'category', 'user', 'db']
+                  'is_expected', 'category', 'user', 'db', 'actual_expenditures']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         if instance.is_expected:
-            representation['actual_expenditures'] = serializers.PrimaryKeyRelatedField(
-                instance.actual_expenditures, many=True)
+            representation.pop('expected_expenditure')
+        else:
+            representation.pop('actual_expenditures')
+            # try:
+            #     representation['actual_expenditures'] = serializers.PrimaryKeyRelatedField(
+            #         many=True, read_only=True).to_representation(instance.actual_expenditures)
+            # except Exception as e:
+            #     print(e)
+            #     print(instance.actual_expenditures)
         return representation
 
     def validate(self, attrs):

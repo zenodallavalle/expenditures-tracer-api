@@ -1,9 +1,7 @@
 from urllib import parse
 
 RESERVED_QUERYSTRING_KEYS = [
-    'mindate',
-    'maxdate',
-    'referencemonth',
+    'month',
 ]
 
 
