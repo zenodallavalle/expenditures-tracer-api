@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-
+from django.utils import timezone
 from main.models import Expenditure
 
 from .DateFilterSerializer import DateFilterSerializer
@@ -11,6 +11,8 @@ class ExpenditureSerializer(DateFilterSerializer):
                                                               queryset=Expenditure.objects.filter(is_expected=True))
     actual_expenditures = serializers.PrimaryKeyRelatedField(
         read_only=True, many=True)
+
+    user = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
 
     def __init__(self, *args, include_children=False, **kwargs):
         self.include_children = include_children
@@ -27,16 +29,19 @@ class ExpenditureSerializer(DateFilterSerializer):
             representation.pop('expected_expenditure')
         else:
             representation.pop('actual_expenditures')
-            # try:
-            #     representation['actual_expenditures'] = serializers.PrimaryKeyRelatedField(
-            #         many=True, read_only=True).to_representation(instance.actual_expenditures)
-            # except Exception as e:
-            #     print(e)
-            #     print(instance.actual_expenditures)
         return representation
 
     def validate(self, attrs):
-        if attrs['is_expected'] and attrs['expected_expenditure'] is not None:
+        attrs['user'] = self.context['request'].user
+        if attrs.get('is_expected', None) and attrs.get('expected_expenditure', None):
             raise ValidationError(
                 'Expenditure cannot be expected and have expected_expenditure at the same time.')
+        if attrs.get('expected_expenditure', None):
+            if attrs['expected_expenditure'].category.pk != attrs.get('category', None):
+                attrs['category'] = attrs['expected_expenditure'].category
         return super().validate(attrs)
+
+    def create(self, validated_data):
+        if 'date' not in validated_data:
+            validated_data['date'] = timezone.now()
+        return super().create(validated_data)
