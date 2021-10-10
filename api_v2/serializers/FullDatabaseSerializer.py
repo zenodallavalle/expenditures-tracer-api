@@ -14,8 +14,8 @@ from .DateFilterSerializer import DateFilterSerializer
 
 
 class FullDatabaseSerializer(DateFilterSerializer):
-    users = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=User.objects.all())
+    users = serializers.PrimaryKeyRelatedField(required=False,
+                                               many=True, queryset=User.objects.all())
 
     def __init__(self, *args, include_children=False, **kwargs):
         self.include_children = include_children
@@ -112,3 +112,8 @@ class FullDatabaseSerializer(DateFilterSerializer):
         self._gen_prospect(representation, instance)
         self._gen_months_list(representation, instance)
         return representation
+
+    def create(self, validated_data):
+        if not validated_data.get('users', None):
+            validated_data['users'] = [self.context['request'].user]
+        return super().create(validated_data)
