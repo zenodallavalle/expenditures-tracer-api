@@ -194,7 +194,8 @@ class DBRelatedViewSet(viewsets.ModelViewSet):
             return super().destroy(request, *args, **kwargs)
         else:
             instance = self.get_object()
-            representation = self.serializer_class(instance).destroy(instance)
+            representation = self.serializer_class(
+                instance, context={'request': request}).destroy(instance)
             return JsonResponse(representation)
 
 
