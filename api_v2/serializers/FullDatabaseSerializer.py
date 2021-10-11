@@ -26,13 +26,9 @@ class FullDatabaseSerializer(DateFilterSerializer):
         fields = ['id', 'name', 'users']
 
     def _get_actual_money(self, instance):
-        # print('_get_actual_money', self.gen_filters_for_month('reference_date'), instance.cashes.filter(
-        #     **self.gen_filters_for_month('reference_date')).filter(income=False).order_by('reference_date').last())
         return instance.cashes.filter(**self.gen_filters_for_month('reference_date')).filter(income=False).order_by('reference_date').last()
 
     def _get_precedent_actual_money(self, instance):
-        # print('_get_precedent_actual_money',
-        #       self.gen_filters_for_precedent('reference_date'), instance.cashes.filter(**self.gen_filters_for_precedent('reference_date')).filter(income=False).order_by('reference_date').last())
         return instance.cashes.filter(**self.gen_filters_for_precedent('reference_date')).filter(income=False).order_by('reference_date').last()
 
     def _gen_prospect(self, representation, instance):
@@ -86,7 +82,10 @@ class FullDatabaseSerializer(DateFilterSerializer):
             'reference_date__month', 'reference_date__year'))
         months_list = []
         for dt in dts:
-            element = {'month': dt.strftime('%m-%Y')}
+            current_month = self.gen_current_month()
+            working_month = dt.strftime('%m-%Y')
+            element = {'month': working_month}
+            element['is_working'] = working_month == current_month
             start_date = timezone.make_aware(dt)
             end_date = timezone.make_aware(
                 dt + relativedelta.relativedelta(months=1))
