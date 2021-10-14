@@ -70,16 +70,24 @@ class FullDatabaseSerializer(DateFilterSerializer):
         representation['prospect'] = prospect
 
     def _gen_months_list(self, representation, instance):
-        def extract_unique_dts(values):
+        def extract_unique_dts(cashes, expenditures=[]):
             dts = []
             dts_d = {}
-            for month, year in values:
+            for month, year in cashes:
+                if f'{month}-{year}' not in dts_d:
+                    dts_d[f'{month}-{year}'] = True
+                    dts.append(datetime(year, month, 1))
+            for month, year in expenditures:
                 if f'{month}-{year}' not in dts_d:
                     dts_d[f'{month}-{year}'] = True
                     dts.append(datetime(year, month, 1))
             return dts
-        dts = extract_unique_dts(instance.cashes.order_by('-reference_date').values_list(
-            'reference_date__month', 'reference_date__year'))
+        dts = extract_unique_dts(
+            instance.cashes.order_by('-reference_date').values_list(
+                'reference_date__month', 'reference_date__year'),
+            instance.expenditures.order_by('-date').values_list(
+                'date__month', 'date__year')
+        )
         months_list = []
         for dt in dts:
             current_month = self.gen_current_month()
