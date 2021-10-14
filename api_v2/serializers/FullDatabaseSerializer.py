@@ -60,7 +60,7 @@ class FullDatabaseSerializer(DateFilterSerializer):
         prospect['expected_saving'] = float(prospect['income'] -
                                             prospect['actual_expenditure'])
         if not actual_money:
-            prospect['actual_money'] = None
+            prospect['actual_saving'] = None
             prospect['delta_saving'] = None
         else:
             prospect['actual_saving'] = float(actual_money.value -
