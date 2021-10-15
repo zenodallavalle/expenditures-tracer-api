@@ -34,7 +34,3 @@ class CategorySerializer(DateFilterSerializer):
             instance.expenditures.filter(**self.gen_filters_for_month()).filter(is_expected=False), many=True, include_children=True, context=self.context).data
         self._gen_prospect(representation, instance)
         return representation
-
-    def update(self, instance, validated_data):
-        print('update category', validated_data)
-        return super().update(instance, validated_data)
