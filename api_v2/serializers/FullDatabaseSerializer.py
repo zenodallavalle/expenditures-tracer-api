@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil import relativedelta
+from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
@@ -37,13 +38,13 @@ class FullDatabaseSerializer(DateFilterSerializer):
         precedent_money = self._get_precedent_actual_money(instance)
 
         prospect = {'warn': None}
-        prospect['income'] = float(instance.cashes.filter(**self.gen_filters_for_month('reference_date')).filter(
-            income=True).aggregate(Sum('value'))['value__sum'] or 0.00)
-        prospect['actual_money'] = float(extract_value(actual_money) or 0.00)
-        prospect['expected_expenditure'] = float(instance.expenditures.filter(**self.gen_filters_for_month()).filter(
-            is_expected=True).aggregate(Sum('value'))['value__sum'] or 0.00)
-        prospect['actual_expenditure'] = float(instance.expenditures.filter(**self.gen_filters_for_month()).filter(
-            is_expected=False).aggregate(Sum('value'))['value__sum'] or 0.00)
+        prospect['income'] = instance.cashes.filter(**self.gen_filters_for_month('reference_date')).filter(
+            income=True).aggregate(Sum('value'))['value__sum'] or Decimal(0)
+        prospect['actual_money'] = extract_value(actual_money) or Decimal(0)
+        prospect['expected_expenditure'] = instance.expenditures.filter(**self.gen_filters_for_month()).filter(
+            is_expected=True).aggregate(Sum('value'))['value__sum'] or Decimal(0)
+        prospect['actual_expenditure'] = instance.expenditures.filter(**self.gen_filters_for_month()).filter(
+            is_expected=False).aggregate(Sum('value'))['value__sum'] or Decimal(0)
 
         if not actual_money:
             prospect['warn'] = 'Actual money for current month not registered yet'
@@ -54,19 +55,19 @@ class FullDatabaseSerializer(DateFilterSerializer):
         else:
             if not check_precedent_money_is_valid(self._get_actual_money(instance), precedent_money, 'reference_date'):
                 prospect['warn'] = 'Previous money registration is more than a month ago'
-            prospect['delta_expenditure'] = float(prospect['expected_expenditure'] -
-                                                  prospect['actual_expenditure'])
+            prospect['delta_expenditure'] = prospect['expected_expenditure'] - \
+                prospect['actual_expenditure']
 
-        prospect['expected_saving'] = float(prospect['income'] -
-                                            prospect['actual_expenditure'])
+        prospect['expected_saving'] = prospect['income'] - \
+            prospect['actual_expenditure']
         if not actual_money:
             prospect['actual_saving'] = None
             prospect['delta_saving'] = None
         else:
-            prospect['actual_saving'] = float(actual_money.value -
-                                              getattr(precedent_money, 'value', 0))
-            prospect['delta_saving'] = float(prospect['actual_saving'] -
-                                             prospect['expected_saving'])
+            prospect['actual_saving'] = actual_money.value - \
+                getattr(precedent_money, 'value', 0)
+            prospect['delta_saving'] = prospect['actual_saving'] - \
+                prospect['expected_saving']
         representation['prospect'] = prospect
 
     def _gen_months_list(self, representation, instance):
@@ -97,14 +98,14 @@ class FullDatabaseSerializer(DateFilterSerializer):
             start_date = timezone.make_aware(dt)
             end_date = timezone.make_aware(
                 dt + relativedelta.relativedelta(months=1))
-            element['income'] = float(instance.cashes.filter(
-                income=True, reference_date__gte=start_date, reference_date__lt=end_date).aggregate(Sum('value'))['value__sum'] or 0.00)
+            element['income'] = instance.cashes.filter(
+                income=True, reference_date__gte=start_date, reference_date__lt=end_date).aggregate(Sum('value'))['value__sum'] or Decimal(0)
             months_list.append(element)
             current_money = instance.cashes.filter(
                 income=False, reference_date__gte=start_date, reference_date__lt=end_date).last()
             element['warn'] = None if current_money else 'This month has no actual money registration'
-            element['current_money'] = float(
-                0.00 if not current_money else current_money.value)
+            element['current_money'] = Decimal(
+                0) if not current_money else current_money.value
         representation['months_list'] = months_list
 
     def to_representation(self, instance):

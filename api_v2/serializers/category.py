@@ -1,4 +1,5 @@
 from django.db.models import Sum
+from decimal import Decimal
 
 from main.models import Category
 
@@ -17,10 +18,10 @@ class CategorySerializer(DateFilterSerializer):
 
     def _gen_prospect(self, representation, instance):
         prospect = {}
-        prospect['expected_expenditure'] = float(instance.expenditures.filter(**self.gen_filters_for_month()).filter(
-            is_expected=True).aggregate(Sum('value'))['value__sum'] or 0.00)
-        prospect['actual_expenditure'] = float(instance.expenditures.filter(**self.gen_filters_for_month()).filter(
-            is_expected=False).aggregate(Sum('value'))['value__sum'] or 0.00)
+        prospect['expected_expenditure'] = instance.expenditures.filter(**self.gen_filters_for_month()).filter(
+            is_expected=True).aggregate(Sum('value'))['value__sum'] or Decimal(0)
+        prospect['actual_expenditure'] = instance.expenditures.filter(**self.gen_filters_for_month()).filter(
+            is_expected=False).aggregate(Sum('value'))['value__sum'] or Decimal(0)
         prospect['delta'] = prospect['actual_expenditure'] - \
             prospect['expected_expenditure']
         representation['prospect'] = prospect
