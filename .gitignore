@@ -1,6 +1,6 @@
 api_test.*
 dumps/
-production*.*
+*production*.*
 dump*.*
 
 # Byte-compiled / optimized / DLL files
