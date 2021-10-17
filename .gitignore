@@ -1,5 +1,7 @@
-api_test.*
+api*_test.*
 dumps/
+*production*.*
+dump*.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

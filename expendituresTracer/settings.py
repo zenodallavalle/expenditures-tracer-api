@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import dotenv_values
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,22 +20,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+SECRET_KEY = dotenv_values(os.path.join(BASE_DIR, '.env'))['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
+DO_NOT_ALTER_REPRESENTATIONS = False
 
-ALLOWED_HOSTS = ['*']
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = ['Authorization', 'Content-Type']
-
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '192.168.1.100',
+    '192.168.1.110',
+]
 
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'main',
-    'v1_api',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,11 +46,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders'
+
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'api_v2.middleware.parseQueryString',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -85,7 +89,7 @@ WSGI_APPLICATION = 'expendituresTracer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -127,7 +131,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = 'static/'
 
 
 REST_FRAMEWORK = {
@@ -137,4 +140,18 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'main.security.CSRFExemptSessionAuthentication',
     ),
+    'EXCEPTION_HANDLER': 'api_v2.exception_handler.custom_exception_handler'
 }
+
+CORS_ALLOWED_ORIGINS = [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+    'http://192.168.1.100:3000',
+    'http://192.168.1.110:3000',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://192.168.1.100:8000',
+    'http://192.168.1.110:8000',
+]
+
+CORS_ALLOW_CREDENTIALS = False
