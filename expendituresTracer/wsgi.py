@@ -13,9 +13,11 @@ from django.core.wsgi import get_wsgi_application
 
 sys.path.append('/var/www/vhosts/expendituresTracer/expendituresTracer')
 # adjust the Python version in the line below as needed
-sys.path.append('/var/www/vhosts/expendituresTracer/venv/lib/python3.7/site-packages')
+sys.path.append(
+    '/var/www/vhosts/expendituresTracer/venv/lib/python3.7/site-packages')
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'expendituresTracer.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE',
+                      'expendituresTracer.production_settings')
 
 try:
     application = get_wsgi_application()
