@@ -22,8 +22,8 @@ class CategorySerializer(DateFilterSerializer):
             is_expected=True).aggregate(Sum('value'))['value__sum'] or Decimal(0)
         prospect['actual_expenditure'] = instance.expenditures.filter(**self.gen_filters_for_month()).filter(
             is_expected=False).aggregate(Sum('value'))['value__sum'] or Decimal(0)
-        prospect['delta'] = prospect['actual_expenditure'] - \
-            prospect['expected_expenditure']
+        prospect['delta'] = prospect['expected_expenditure'] - \
+            prospect['actual_expenditure']
         representation['prospect'] = prospect
 
     def to_representation(self, instance):
