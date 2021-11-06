@@ -1,3 +1,5 @@
+from decimal import Decimal
+from django.db.models import Sum
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from django.utils import timezone
@@ -25,10 +27,29 @@ class ExpenditureSerializer(DateFilterSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        prospect = {}
         if instance.is_expected:
             representation.pop('expected_expenditure')
+
+            prospect['actual'] = instance.actual_expenditures.all().aggregate(Sum('value'))[
+                'value__sum']
+            prospect['expected'] = representation['value']
+            prospect['delta'] = instance.value - prospect['actual']
+
         else:
             representation.pop('actual_expenditures')
+
+            if instance.expected_expenditure:
+                prospect['actual'] = instance.expected_expenditure.actual_expenditures.all().aggregate(
+                    Sum('value'))['value__sum']
+                prospect['expected'] = instance.expected_expenditure.value
+                prospect['delta'] = prospect['expected'] - prospect['actual']
+            else:
+                prospect['actual'] = representation['value']
+                prospect['expected'] = None
+                prospect['delta'] = None
+
+        representation['prospect'] = prospect
         return representation
 
     def validate(self, attrs):
