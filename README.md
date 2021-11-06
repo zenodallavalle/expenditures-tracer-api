@@ -11,4 +11,4 @@ This repository contains the API. They are based on django and django-rest-frame
 1. Create a virtual environment
 2. Install `requirements.txt`
 
-_This readme file will be updated with api specifications. Docs will be soon generated._
+_This readme file will be updated with api specifications. Docs will be generated._
