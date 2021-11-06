@@ -32,7 +32,7 @@ class ExpenditureSerializer(DateFilterSerializer):
             representation.pop('expected_expenditure')
 
             prospect['actual'] = instance.actual_expenditures.all().aggregate(Sum('value'))[
-                'value__sum']
+                'value__sum'] or Decimal(0)
             prospect['expected'] = representation['value']
             prospect['delta'] = instance.value - prospect['actual']
 
