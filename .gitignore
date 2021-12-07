@@ -4,6 +4,9 @@ dumps/
 dump*.*
 /static/
 
+# MAC OS files
+.ds_store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
