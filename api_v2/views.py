@@ -1,5 +1,5 @@
-from rest_framework.exceptions import MethodNotAllowed, ParseError, bad_request
-from rest_framework.utils import representation
+from django.db.models import Q
+from rest_framework.exceptions import ParseError, bad_request
 from .exceptions import NotAllowedAction
 import json
 from datetime import datetime
@@ -10,15 +10,15 @@ from django.contrib.auth.models import User
 from django.http.response import HttpResponse
 from api_v2.serializers.user import PublicUserSerializer
 from main.models import Database, Cash, Category, Expenditure
-from datetime import date, datetime, time, timedelta
+from datetime import datetime
 from django.utils import timezone
 from rest_framework import viewsets, permissions
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
 from django.conf import settings
 from .permissions import DBPermission, DBRelatedPermission
-from api_v2.serializers import PrivateUserSerializer, PublicUserSerializer, CategorySerializer, SimpleDatabaseSerializer, FullDatabaseSerializer, CashSerializer, ExpenditureSerializer
+from api_v2.serializers import PrivateUserSerializer, PublicUserSerializer, CategorySerializer, FullDatabaseSerializer, CashSerializer, ExpenditureSerializer
+from api_v2.serializers.expenditure import ExpenditureSerializer as EXPNDTRS
 
 
 def validate_month(val):
@@ -221,3 +221,46 @@ class CategoryViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWit
 class ExpenditureViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
     model = Expenditure
     serializer_class = ExpenditureSerializer
+
+
+class ExpenditureSearchViewSet(DBRelatedViewSet):
+    http_method_names = ['options', 'head', 'get']
+    model = Expenditure
+    serializer_class = EXPNDTRS
+
+    def _create_query_from_params(self):
+        query = Q(db__in=self.request.user.dbs.all())
+        for key, value in self.request.params.items():
+            if key == 'queryString':
+                for words in value:
+                    for w in words.split(' '):
+                        query = query & Q(name__icontains=w) 
+            elif key == 'from':
+                query = query & Q(date__gte=value[0])
+            elif key == 'to':
+                query = query & Q(date__lte=value[0])
+            elif key == 'lowerPrice':
+                query = query & Q(value__gte=value[0])
+            elif key == 'upperPrice':
+                query = query & Q(value__lte=value[0])
+            elif key == 'type':
+                if value[0] == 'actual':
+                    query = query & Q(is_expected=False)
+                elif value[0] == 'expected':
+                    query = query & Q(is_expected=True)
+        return query
+
+    def get_queryset(self):
+        '''
+        Available parameters are queryString, from, to, lowerPrice, upperPrice, type ['both', 'actual', 'expected']
+        '''
+        try:
+            query = self._create_query_from_params()
+            print(query)
+            queryset = Expenditure.objects.filter(query)
+            print(queryset)
+            return queryset
+        except Exception as e:
+            print(e)
+            # return Response('Bad Request', status.HTTP_400_BAD_REQUEST)
+    
