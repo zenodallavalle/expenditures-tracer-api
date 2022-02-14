@@ -256,9 +256,8 @@ class ExpenditureSearchViewSet(DBRelatedViewSet):
         '''
         try:
             query = self._create_query_from_params()
-            print(query)
             queryset = Expenditure.objects.filter(query)
-            print(queryset)
+            queryset = queryset.order_by('-date')
             return queryset
         except Exception as e:
             print(e)
