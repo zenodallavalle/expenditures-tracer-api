@@ -228,38 +228,52 @@ class ExpenditureSearchViewSet(DBRelatedViewSet):
     model = Expenditure
     serializer_class = EXPNDTRS
 
-    def _create_query_from_params(self):
-        query = Q(db__in=self.request.user.dbs.all())
-        for key, value in self.request.params.items():
-            if key == 'queryString':
-                for words in value:
-                    for w in words.split(' '):
-                        query = query & Q(name__icontains=w) 
-            elif key == 'from':
-                query = query & Q(date__gte=value[0])
-            elif key == 'to':
-                query = query & Q(date__lte=value[0])
-            elif key == 'lowerPrice':
-                query = query & Q(value__gte=value[0])
-            elif key == 'upperPrice':
-                query = query & Q(value__lte=value[0])
-            elif key == 'type':
-                if value[0] == 'actual':
-                    query = query & Q(is_expected=False)
-                elif value[0] == 'expected':
-                    query = query & Q(is_expected=True)
-        return query
+    def _queryset_from_queryString(self, queryset):
+        query_string = self.request.params.get('queryString', None)
+        if query_string is None:
+            return queryset
+        query_string = query_string[0]
+        queries = [[Q(name__icontains=AND) for AND in OR.strip().split(' ')] for OR in query_string.split(',')]
+        ORS = []
+        for qs in queries:
+            query = qs[0]
+            for i in range(1, len(qs)):
+                query = query & qs[i]
+            ORS.append(query)
+        query = ORS[0]
+        for i in range(1, len(ORS)):
+            query = query | ORS[i]
+        
+        return queryset.filter(query)
 
     def get_queryset(self):
         '''
         Available parameters are queryString, from, to, lowerPrice, upperPrice, type ['both', 'actual', 'expected']
         '''
-        try:
-            query = self._create_query_from_params()
+        other_parameters = False
+        query = Q(db__in=self.request.user.dbs.all())
+        for key, value in self.request.params.items():
+            if key == 'from':
+                other_parameters = True
+                query = query & Q(date__gte=value[0])
+            elif key == 'to':
+                other_parameters = True
+                query = query & Q(date__lte=value[0])
+            elif key == 'lowerPrice':
+                other_parameters = True
+                query = query & Q(value__gte=value[0])
+            elif key == 'upperPrice':
+                other_parameters = True
+                query = query & Q(value__lte=value[0])
+            elif key == 'type':
+                if value[0] == 'actual':
+                    other_parameters = True
+                    query = query & Q(is_expected=False)
+                elif value[0] == 'expected':
+                    other_parameters = True
+                    query = query & Q(is_expected=True)
+        if other_parameters or len(self.request.params.get('queryString', [])) > 0:
             queryset = Expenditure.objects.filter(query)
-            queryset = queryset.order_by('-date')
-            return queryset
-        except Exception as e:
-            print(e)
-            # return Response('Bad Request', status.HTTP_400_BAD_REQUEST)
-    
+            queryset = self._queryset_from_queryString(queryset)
+            return queryset.order_by('-date')
+        return Expenditure.objects.none()
