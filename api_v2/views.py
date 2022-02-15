@@ -1,5 +1,5 @@
-from rest_framework.exceptions import MethodNotAllowed, ParseError, bad_request
-from rest_framework.utils import representation
+from django.db.models import Q
+from rest_framework.exceptions import ParseError, bad_request
 from .exceptions import NotAllowedAction
 import json
 from datetime import datetime
@@ -10,15 +10,15 @@ from django.contrib.auth.models import User
 from django.http.response import HttpResponse
 from api_v2.serializers.user import PublicUserSerializer
 from main.models import Database, Cash, Category, Expenditure
-from datetime import date, datetime, time, timedelta
+from datetime import datetime
 from django.utils import timezone
 from rest_framework import viewsets, permissions
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
 from django.conf import settings
 from .permissions import DBPermission, DBRelatedPermission
-from api_v2.serializers import PrivateUserSerializer, PublicUserSerializer, CategorySerializer, SimpleDatabaseSerializer, FullDatabaseSerializer, CashSerializer, ExpenditureSerializer
+from api_v2.serializers import PrivateUserSerializer, PublicUserSerializer, CategorySerializer, FullDatabaseSerializer, CashSerializer, ExpenditureSerializer
+from api_v2.serializers.expenditure import ExpenditureSerializer as EXPNDTRS
 
 
 def validate_month(val):
@@ -221,3 +221,59 @@ class CategoryViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWit
 class ExpenditureViewSet(DBRelatedViewSet, ModelViewSetWithoutList, ModelViewSetWithoutRetrieve):
     model = Expenditure
     serializer_class = ExpenditureSerializer
+
+
+class ExpenditureSearchViewSet(DBRelatedViewSet):
+    http_method_names = ['options', 'head', 'get']
+    model = Expenditure
+    serializer_class = EXPNDTRS
+
+    def _queryset_from_queryString(self, queryset):
+        query_string = self.request.params.get('queryString', None)
+        if query_string is None:
+            return queryset
+        query_string = query_string[0]
+        queries = [[Q(name__icontains=AND) for AND in OR.strip().split(' ')] for OR in query_string.split(',')]
+        ORS = []
+        for qs in queries:
+            query = qs[0]
+            for i in range(1, len(qs)):
+                query = query & qs[i]
+            ORS.append(query)
+        query = ORS[0]
+        for i in range(1, len(ORS)):
+            query = query | ORS[i]
+        
+        return queryset.filter(query)
+
+    def get_queryset(self):
+        '''
+        Available parameters are queryString, from, to, lowerPrice, upperPrice, type ['both', 'actual', 'expected']
+        '''
+        other_parameters = False
+        query = Q(db__in=self.request.user.dbs.all())
+        for key, value in self.request.params.items():
+            if key == 'from':
+                other_parameters = True
+                query = query & Q(date__gte=value[0])
+            elif key == 'to':
+                other_parameters = True
+                query = query & Q(date__lte=value[0])
+            elif key == 'lowerPrice':
+                other_parameters = True
+                query = query & Q(value__gte=value[0])
+            elif key == 'upperPrice':
+                other_parameters = True
+                query = query & Q(value__lte=value[0])
+            elif key == 'type':
+                if value[0] == 'actual':
+                    other_parameters = True
+                    query = query & Q(is_expected=False)
+                elif value[0] == 'expected':
+                    other_parameters = True
+                    query = query & Q(is_expected=True)
+        if other_parameters or len(self.request.params.get('queryString', [])) > 0:
+            queryset = Expenditure.objects.filter(query)
+            queryset = self._queryset_from_queryString(queryset)
+            return queryset.order_by('-date')
+        return Expenditure.objects.none()

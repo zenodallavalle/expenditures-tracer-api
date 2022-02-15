@@ -15,7 +15,6 @@ Including another URLconf
 """
 
 from django.urls import include, path
-from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework import routers
 
 from . import views
@@ -32,7 +31,8 @@ urlpatterns = [
     path('months/', views.get_months, name='months'),
     path('copy-expenditures-from-precedent-month/',
          views.copy_from_precedent_month, name='copy-from-precedent-month'),
-    path('', include(router.urls)),
+    path('expenditures/search/', views.ExpenditureSearchViewSet.as_view({'get':'list'}), name='search expenditures'),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-token-auth/', views.ExtendedAuthToken.as_view(), name='api_token_auth'),
+    path('', include(router.urls)),
 ]
