@@ -71,7 +71,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
         if self.context['request'].method == 'POST' or (
             self.context['request'].method in ['PATCH', 'PUT'] and 'password' in attrs
         ):
-            self._hash_password(attrs['password'])
+            self._hash_password(attrs)
 
         return super().validate(attrs)
 
