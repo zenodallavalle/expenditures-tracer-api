@@ -1,5 +1,7 @@
 from django.db.models import Q
 from rest_framework.exceptions import ParseError, bad_request
+
+from api_v2.serializers import user
 from .exceptions import NotAllowedAction
 import json
 from datetime import datetime
@@ -177,13 +179,38 @@ class ExtendedAuthToken(ObtainAuthToken):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
     permission_classes = [UserPermission]
+
+    def get_queryset(self):
+        ids = self.request.params.get('ids', None)
+        if ids is not None:
+            return User.objects.filter(
+                id__in=ids[0].strip().lower().split(',')
+            ).order_by('id')
+        return User.objects.all()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return PrivateUserSerializer
         return PublicUserSerializer
+
+
+class UserSearchViewSet(viewsets.ModelViewSet):
+    permission_classes = [UserPermission]
+    http_method_names = ['options', 'head', 'get']
+    model = User
+    serializer_class = PublicUserSerializer
+
+    def get_queryset(self):
+        '''
+        Available parameters are username
+        '''
+        username = self.request.params.get('username', None)
+        if username is None:
+            return User.objects.none()
+        return User.objects.filter(
+            username__icontains=username[0].strip().lower()
+        ).order_by('username')
 
 
 class ModelViewSetWithoutRetrieve(viewsets.ModelViewSet):

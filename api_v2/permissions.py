@@ -3,12 +3,10 @@ from rest_framework import permissions
 
 class UserPermission(permissions.IsAuthenticated):
     def has_object_permission(self, request, view, obj):
-        return super().has_object_permission(request, view, obj)
+        return True
 
     def has_permission(self, request, view):
-        if request.method == 'POST':
-            return True
-        return super().has_permission(request, view)
+        return True
 
 
 class DBPermission(permissions.IsAuthenticated):

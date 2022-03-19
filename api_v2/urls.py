@@ -24,14 +24,25 @@ router.register(r'users', views.UserViewSet, basename='users')
 router.register(r'dbs', views.DatabaseViewSet, basename='dbs')
 router.register(r'cash', views.CashViewSet, basename='cashes')
 router.register(r'categories', views.CategoryViewSet, basename='categories')
-router.register(r'expenditures', views.ExpenditureViewSet,
-                basename='expenditures')
+router.register(r'expenditures', views.ExpenditureViewSet, basename='expenditures')
 
 urlpatterns = [
     path('months/', views.get_months, name='months'),
-    path('copy-expenditures-from-precedent-month/',
-         views.copy_from_precedent_month, name='copy-from-precedent-month'),
-    path('expenditures/search/', views.ExpenditureSearchViewSet.as_view({'get':'list'}), name='search expenditures'),
+    path(
+        'copy-expenditures-from-precedent-month/',
+        views.copy_from_precedent_month,
+        name='copy-from-precedent-month',
+    ),
+    path(
+        'expenditures/search/',
+        views.ExpenditureSearchViewSet.as_view({'get': 'list'}),
+        name='search expenditures',
+    ),
+    path(
+        'users/search/',
+        views.UserSearchViewSet.as_view({'get': 'list'}),
+        name='searc users',
+    ),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-token-auth/', views.ExtendedAuthToken.as_view(), name='api_token_auth'),
     path('', include(router.urls)),
