@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-
 ]
 
 MIDDLEWARE = [
@@ -59,7 +58,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
 ]
 
 ROOT_URLCONF = 'expendituresTracer.urls'
@@ -141,7 +139,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'main.security.CSRFExemptSessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'api_v2.exception_handler.custom_exception_handler'
+    'EXCEPTION_HANDLER': 'api_v2.exception_handler.custom_exception_handler',
 }
 
 CORS_ALLOWED_ORIGINS = [
