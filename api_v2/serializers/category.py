@@ -30,8 +30,8 @@ class CategorySerializer(DateFilterSerializer):
         representation = super().to_representation(instance)
         # if self.context.get('request', DummyRequest()).method == 'GET' or getattr(self, 'include_children', False):
         representation['expected_expenditures'] = ExpenditureSerializer(
-            instance.expenditures.filter(**self.gen_filters_for_month()).filter(is_expected=True), many=True, include_children=True, context=self.context).data
+            instance.expenditures.filter(**self.gen_filters_for_month()).filter(is_expected=True).order_by('date'), many=True, include_children=True, context=self.context).data
         representation['actual_expenditures'] = ExpenditureSerializer(
-            instance.expenditures.filter(**self.gen_filters_for_month()).filter(is_expected=False), many=True, include_children=True, context=self.context).data
+            instance.expenditures.filter(**self.gen_filters_for_month()).filter(is_expected=False).order_by('date'), many=True, include_children=True, context=self.context).data
         self._gen_prospect(representation, instance)
         return representation
