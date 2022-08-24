@@ -6,6 +6,8 @@ class UserPermission(permissions.IsAuthenticated):
         return request.user.is_authenticated
 
     def has_permission(self, request, view):
+        if request.method in ['HEAD', 'POST']:
+            return True
         return request.user.is_authenticated
 
 
