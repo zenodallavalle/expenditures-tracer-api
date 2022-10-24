@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import dotenv_values
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,7 @@ SECRET_KEY = dotenv_values(os.path.join(BASE_DIR, '.env'))['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-DO_NOT_ALTER_REPRESENTATIONS = False
+DO_NOT_ALTER_REPRESENTATIONS = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -133,6 +134,7 @@ STATIC_ROOT = 'static/'
 
 
 REST_FRAMEWORK = {
+    'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -154,3 +156,5 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = False
+
+CORS_ALLOW_HEADERS = list(default_headers) + ['month', 'db']
