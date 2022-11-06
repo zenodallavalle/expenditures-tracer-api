@@ -222,7 +222,9 @@ class ModelViewSetWithoutRetrieve(viewsets.ModelViewSet):
 
 class ModelViewSetWithoutList(viewsets.ModelViewSet):
     def _analyze_request_month(self):
-        month = self.request.params.get('month', [None])[0]
+        month = self.request.params.get('month', [None])[0] or self.request.headers.get(
+            'month', None
+        )
         if month:
             month, year = [int(x.strip()) for x in month.split('-')[:2]]
         else:
@@ -254,6 +256,10 @@ class DBRelatedViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.model.objects.filter(db__users__in=[self.request.user])
+        params = getattr(self.request, 'params', {})
+        if params.get('id', None):
+            ids = [int(x.strip()) for x in params['id'] if x.strip().isnumeric()]
+            queryset = queryset.filter(id__in=ids)
         return queryset
 
     def destroy(self, request, *args, **kwargs):
