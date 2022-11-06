@@ -15,7 +15,6 @@ import os
 from dotenv import dotenv_values
 from corsheaders.defaults import default_headers
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
@@ -25,8 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = dotenv_values(os.path.join(BASE_DIR, '.env'))['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-DO_NOT_ALTER_REPRESENTATIONS = False
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -52,7 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'api_v2.middleware.parseQueryString',
+    'api_v3.middleware.parseQueryString',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -135,13 +133,14 @@ STATIC_ROOT = 'static/'
 
 
 REST_FRAMEWORK = {
+    'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
         'main.security.CSRFExemptSessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'api_v2.exception_handler.custom_exception_handler',
+    'EXCEPTION_HANDLER': 'api_v3.exception_handler.custom_exception_handler',
 }
 
 CORS_ALLOWED_ORIGINS = [
