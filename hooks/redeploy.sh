@@ -1,5 +1,6 @@
 #!/bin/sh
 
+ssh-keyscan github.com >> ~/.ssh/known_hosts
 cd /var/www/vhosts/expenditures-tracer-api/
 git pull -f origin master
 . env/bin/activate
