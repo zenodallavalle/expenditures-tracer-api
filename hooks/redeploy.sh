@@ -4,7 +4,7 @@ cd /var/www/vhosts/expenditures-tracer-api/
 git pull -f origin master
 . env/bin/activate
 rm -rf static/
-python manage.py collectstatic
-python manage.py migrate
+python manage.py collectstatic --settings "expendituresTracer.production_settings"
+python manage.py migrate --settings "expendituresTracer.production_settings"
 deactivate
 sudo service apache2 restart
