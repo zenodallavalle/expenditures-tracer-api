@@ -1,24 +1,13 @@
-from django.conf import settings
-from .SimpleDatabaseSerializer import SimpleDatabaseSerializer
+# from django.conf import settings
 from .FullDatabaseSerializer import FullDatabaseSerializer
+from .GraphsDatabaseSerializer import GraphsDatabaseSerializer
+from .SimpleDatabaseSerializer import SimpleDatabaseSerializer
 
 
 from .user import PrivateUserSerializer, PublicUserSerializer
 
 
 from .DBRelatedBaseSerializer import DBRelatedBaseSerializer
-from .category import CategorySerializer as CTGRS
-from .cash import CashSerializer as CSHS
-from .expenditure import ExpenditureSerializer as EXPNDTRS
-
-
-class CategorySerializer(CTGRS):
-    pass
-
-
-class CashSerializer(CSHS):
-    pass
-
-
-class ExpenditureSerializer(EXPNDTRS):
-    pass
+from .category import CategorySerializer
+from .cash import CashSerializer
+from .expenditure import ExpenditureSerializer
