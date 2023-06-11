@@ -1,13 +1,20 @@
 from django.db.models import Q
 
+from api_v3.serializers import SimpleDatabaseSerializer
+
+
 from .exceptions import NotAllowedAction
+from datetime import datetime
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 from django.http import JsonResponse, Http404
 from django.contrib.auth.models import User
 
 from .serializers.user import PublicUserSerializer
 from main.models import Database, Cash, Category, Expenditure
+from datetime import datetime
+from django.utils import timezone
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from .permissions import DBPermission, DBRelatedPermission, UserPermission
@@ -16,10 +23,10 @@ from .serializers import (
     PublicUserSerializer,
     CategorySerializer,
     FullDatabaseSerializer,
-    SimpleDatabaseSerializer,
     CashSerializer,
     ExpenditureSerializer,
 )
+from api_v3.serializers.expenditure import ExpenditureSerializer as EXPNDTRS
 
 
 class ExtendedAuthToken(ObtainAuthToken):
@@ -120,6 +127,28 @@ class DBRelatedViewSet(viewsets.ModelViewSet):
     #         return JsonResponse(representation)
 
 
+class DateBasedViewSet(viewsets.ModelViewSet):
+    def _analyze_request_month(self):
+        month = self.request.params.get(
+            'month', [self.request.headers.get('month', None)]
+        )[0]
+        if month:
+            month, year = [int(x.strip()) for x in month.split('-')[:2]]
+        else:
+            n = datetime.now()
+            month = n.month
+            year = n.year
+        min_date = datetime(year, month, 1)
+        max_date = min_date + relativedelta(months=1)
+        self.request.min_date = timezone.make_aware(min_date)
+        self.request.max_date = timezone.make_aware(max_date)
+
+    def initial(self, request, *args, **kwargs):
+        ret = super().initial(request, *args, **kwargs)
+        self._analyze_request_month()
+        return ret
+
+
 class ModelViewSet(viewsets.ModelViewSet):
     paginator = None
 
@@ -152,6 +181,7 @@ class DatabaseDBRelatedAdapter(DBRelatedViewSet):
 class DatabaseViewSet(
     ModelViewSet,
     DatabaseDBRelatedAdapter,
+    DateBasedViewSet,
 ):
     model = Database
     serializer_class = FullDatabaseSerializer
@@ -165,17 +195,17 @@ class DatabaseViewSet(
         return super().get_serializer_class()
 
 
-class CashViewSet(ModelViewSet, DBRelatedViewSet):
+class CashViewSet(ModelViewSet, DBRelatedViewSet, DateBasedViewSet):
     model = Cash
     serializer_class = CashSerializer
 
 
-class CategoryViewSet(ModelViewSet, DBRelatedViewSet):
+class CategoryViewSet(ModelViewSet, DBRelatedViewSet, DateBasedViewSet):
     model = Category
     serializer_class = CategorySerializer
 
 
-class ExpenditureViewSet(ModelViewSet, DBRelatedViewSet):
+class ExpenditureViewSet(ModelViewSet, DBRelatedViewSet, DateBasedViewSet):
     model = Expenditure
     serializer_class = ExpenditureSerializer
 
@@ -189,7 +219,7 @@ class ExpenditureViewSet(ModelViewSet, DBRelatedViewSet):
 class ExpenditureSearchViewSet(DBRelatedViewSet):
     http_method_names = ['options', 'head', 'get']
     model = Expenditure
-    serializer_class = ExpenditureSerializer
+    serializer_class = EXPNDTRS
     paginator = None
 
     def _queryset_from_queryString(self, queryset):
