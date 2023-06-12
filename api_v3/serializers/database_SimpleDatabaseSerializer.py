@@ -1,6 +1,5 @@
-from rest_framework import serializers
-
 from main.models import Database
+from rest_framework import serializers
 
 
 class SimpleDatabaseSerializer(serializers.ModelSerializer):
@@ -12,4 +11,4 @@ class SimpleDatabaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Database
-        fields = ['id', 'name', 'users']
+        fields = ["id", "name", "users"]

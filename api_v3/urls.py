@@ -20,24 +20,24 @@ from rest_framework import routers
 from . import views
 
 router = routers.DefaultRouter()
-router.register(r'users', views.UserViewSet, basename='users')
-router.register(r'dbs', views.DatabaseViewSet, basename='dbs')
-router.register(r'cash', views.CashViewSet, basename='cashes')
-router.register(r'categories', views.CategoryViewSet, basename='categories')
-router.register(r'expenditures', views.ExpenditureViewSet, basename='expenditures')
+router.register(r"users", views.UserViewSet, basename="users")
+router.register(r"dbs", views.DatabaseViewSet, basename="dbs")
+router.register(r"cash", views.CashViewSet, basename="cashes")
+router.register(r"categories", views.CategoryViewSet, basename="categories")
+router.register(r"expenditures", views.ExpenditureViewSet, basename="expenditures")
 
 urlpatterns = [
     path(
-        'expenditures/search/',
-        views.ExpenditureSearchViewSet.as_view({'get': 'list'}),
-        name='search expenditures',
+        "expenditures/search/",
+        views.ExpenditureSearchViewSet.as_view({"get": "list"}),
+        name="search expenditures",
     ),
     path(
-        'users/search/',
-        views.UserSearchViewSet.as_view({'get': 'list'}),
-        name='searc users',
+        "users/search/",
+        views.UserSearchViewSet.as_view({"get": "list"}),
+        name="searc users",
     ),
-    path('api-token-auth/', views.ExtendedAuthToken.as_view(), name='api_token_auth'),
-    path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework_v3')),
+    path("api-token-auth/", views.ExtendedAuthToken.as_view(), name="api_token_auth"),
+    path("", include(router.urls)),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework_v3")),
 ]

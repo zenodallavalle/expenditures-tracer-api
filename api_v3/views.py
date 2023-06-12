@@ -4,9 +4,9 @@ from .exceptions import NotAllowedAction
 from django.http import JsonResponse, Http404
 from django.contrib.auth.models import User
 
-from .serializers.user import PublicUserSerializer
 from main.models import Database, Cash, Category, Expenditure
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from .permissions import DBPermission, DBRelatedPermission, UserPermission
@@ -15,6 +15,7 @@ from .serializers import (
     PublicUserSerializer,
     CategorySerializer,
     FullDatabaseSerializer,
+    GraphDatabaseSerializer,
     SimpleDatabaseSerializer,
     CashSerializer,
     ExpenditureSerializer,
@@ -108,16 +109,6 @@ class DBRelatedViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return self.model.objects.filter(db__users__in=[self.request.user])
 
-    # def destroy(self, request, *args, **kwargs):
-    #     if not getattr(self.serializer_class, 'destroy', None):
-    #         return super().destroy(request, *args, **kwargs)
-    #     else:
-    #         instance = self.get_object()
-    #         representation = self.serializer_class(
-    #             instance, context={'request': request}
-    #         ).destroy(instance)
-    #         return JsonResponse(representation)
-
 
 class ModelViewSet(viewsets.ModelViewSet):
     paginator = None
@@ -163,6 +154,14 @@ class DatabaseViewSet(
             return SimpleDatabaseSerializer
         return super().get_serializer_class()
 
+    @action(
+        detail=True,
+        methods=["get", "head", "options"],
+        serializer_class=GraphDatabaseSerializer,
+    )
+    def graph(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
 
 class CashViewSet(ModelViewSet, DBRelatedViewSet):
     model = Cash
@@ -179,9 +178,10 @@ class ExpenditureViewSet(ModelViewSet, DBRelatedViewSet):
     serializer_class = ExpenditureSerializer
 
     def get_serializer(self, *args, **kwargs):
-        data = kwargs.get("data", None)
-        if data:
-            kwargs["many"] = isinstance(data, list)
+        if "many" not in kwargs:
+            data = kwargs.get("data", None)
+            if data:
+                kwargs["many"] = isinstance(data, list)
         return super().get_serializer(*args, **kwargs)
 
 
