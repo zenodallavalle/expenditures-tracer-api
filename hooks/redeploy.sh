@@ -3,6 +3,7 @@
 cd /var/www/vhosts/expenditures-tracer-api/
 git pull -f origin master
 . env/bin/activate
+pip install -r requirements.txt
 
 python manage.py migrate --settings "expendituresTracer.production_settings"
 python manage.py collectstatic --no-input --settings "expendituresTracer.production_settings"
