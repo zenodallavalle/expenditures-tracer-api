@@ -72,10 +72,9 @@ class FullDatabaseSerializer(DateFilterSerializer):
 
         if not actual_money:
             prospect["warn"] = "Actual money for current month not registered yet"
-            prospect["delta_expenditure"] = None
+
         elif not precedent_money:
             prospect["warn"] = "Previous month money not found"
-            prospect["delta_expenditure"] = None
         else:
             if not check_precedent_money_is_valid(
                 self._get_actual_money(instance), precedent_money, "reference_date"
@@ -83,9 +82,9 @@ class FullDatabaseSerializer(DateFilterSerializer):
                 prospect[
                     "warn"
                 ] = "Previous money registration is more than a month ago"
-            prospect["delta_expenditure"] = (
-                prospect["expected_expenditure"] - prospect["actual_expenditure"]
-            )
+        prospect["delta_expenditure"] = (
+            prospect["expected_expenditure"] - prospect["actual_expenditure"]
+        )
 
         prospect["expected_saving"] = (
             prospect["income"] - prospect["actual_expenditure"]
