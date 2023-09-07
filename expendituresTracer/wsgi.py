@@ -12,9 +12,9 @@ import sys
 from django.core.wsgi import get_wsgi_application
 from dotenv import dotenv_values
 
-# sys.path.append('/var/www/vhosts/expenditures-tracer-api')
+# sys.path.append("../")
 # adjust the Python version in the line below as needed
-sys.path.append(dotenv_values(".env")["PYTHON_SITE_PACKAGES_PATH"])
+sys.path.append(dotenv_values("../.env")["PYTHON_SITE_PACKAGES_PATH"])
 # '/var/www/vhosts/expenditures-tracer-api/env/lib/python3.8/site-packages')
 
 os.environ.setdefault(
