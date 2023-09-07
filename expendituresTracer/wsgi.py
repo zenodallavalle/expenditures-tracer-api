@@ -10,20 +10,22 @@ import signal
 import sys
 
 from django.core.wsgi import get_wsgi_application
+from dotenv import dotenv_values
 
-sys.path.append('/var/www/vhosts/expenditures-tracer-api')
+# sys.path.append('/var/www/vhosts/expenditures-tracer-api')
 # adjust the Python version in the line below as needed
-sys.path.append(
-    '/var/www/vhosts/expenditures-tracer-api/env/lib/python3.8/site-packages')
+sys.path.append(dotenv_values(".env")["PYTHON_SITE_PACKAGES_PATH"])
+# '/var/www/vhosts/expenditures-tracer-api/env/lib/python3.8/site-packages')
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE',
-                      'expendituresTracer.production_settings')
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE", "expendituresTracer.production_settings"
+)
 
 try:
     application = get_wsgi_application()
 except Exception:
     # Error loading applications
-    if 'mod_wsgi' in sys.modules:
+    if "mod_wsgi" in sys.modules:
         traceback.print_exc()
         os.kill(os.getpid(), signal.SIGINT)
         time.sleep(2.5)

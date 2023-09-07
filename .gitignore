@@ -1,6 +1,5 @@
 api*_test.*
 dumps/
-*production*.*
 dump*.*
 /static/
 
