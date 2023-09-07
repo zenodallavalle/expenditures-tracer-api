@@ -1,6 +1,6 @@
-asgiref==3.3.1
+asgiref==3.7.2
 dj-database-url==0.5.0
-Django==3.1.14
+Django==4.2.5
 django-cors-headers==3.6.0
 djangorestframework==3.12.2
 pycodestyle==2.7.0
@@ -11,4 +11,5 @@ simplejson==3.17.2
 six==1.15.0
 sqlparse==0.4.4
 toml==0.10.2
+typing_extensions==4.7.1
 whitenoise==5.2.0
