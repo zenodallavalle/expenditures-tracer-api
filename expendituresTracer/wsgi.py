@@ -12,12 +12,12 @@ import sys
 from django.core.wsgi import get_wsgi_application
 from dotenv import dotenv_values
 
-sys.path.append(os.path.join(os.getcwd(), os.pardir))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 # adjust the Python version in the line below as needed
 sys.path.append(
-    dotenv_values(os.path.join(os.getcwd(), os.pardir, ".env"))[
-        "PYTHON_SITE_PACKAGES_PATH"
-    ]
+    dotenv_values(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, ".env")
+    )["PYTHON_SITE_PACKAGES_PATH"]
 )
 
 os.environ.setdefault(
