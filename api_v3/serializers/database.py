@@ -1,8 +1,8 @@
+from django.db import models
 from datetime import datetime
 from dateutil import relativedelta
 from decimal import Decimal
 from django.contrib.auth.models import User
-from django.db.models import Sum
 from django.utils import timezone
 from main.models import Database, Cash
 from rest_framework import serializers
@@ -59,16 +59,22 @@ class FullDatabaseSerializer(DateFilterSerializer):
         precedent_money = self._get_precedent_actual_money(instance)
 
         prospect = {"warn": None}
-        prospect["income"] = instance.cashes.filter(
-            **self.gen_filters_for_month("reference_date")
-        ).filter(income=True).aggregate(Sum("value"))["value__sum"] or Decimal(0)
+        prospect["income"] = (
+            instance.cashes.filter(**self.gen_filters_for_month("reference_date"))
+            .filter(income=True)
+            .aggregate(models.Sum("value", default=0))["value__sum"]
+        )
         prospect["actual_money"] = extract_value(actual_money) or Decimal(0)
-        prospect["expected_expenditure"] = instance.expenditures.filter(
-            **self.gen_filters_for_month()
-        ).filter(is_expected=True).aggregate(Sum("value"))["value__sum"] or Decimal(0)
-        prospect["actual_expenditure"] = instance.expenditures.filter(
-            **self.gen_filters_for_month()
-        ).filter(is_expected=False).aggregate(Sum("value"))["value__sum"] or Decimal(0)
+        prospect["expected_expenditure"] = (
+            instance.expenditures.filter(**self.gen_filters_for_month())
+            .filter(is_expected=True)
+            .aggregate(models.Sum("value", default=0))["value__sum"]
+        )
+        prospect["actual_expenditure"] = (
+            instance.expenditures.filter(**self.gen_filters_for_month())
+            .filter(is_expected=False)
+            .aggregate(models.Sum("value", default=0))["value__sum"]
+        )
 
         if not actual_money:
             prospect["warn"] = "Actual money for current month not registered yet"
@@ -79,9 +85,9 @@ class FullDatabaseSerializer(DateFilterSerializer):
             if not check_precedent_money_is_valid(
                 self._get_actual_money(instance), precedent_money, "reference_date"
             ):
-                prospect[
-                    "warn"
-                ] = "Previous money registration is more than a month ago"
+                prospect["warn"] = (
+                    "Previous money registration is more than a month ago"
+                )
         prospect["delta_expenditure"] = (
             prospect["expected_expenditure"] - prospect["actual_expenditure"]
         )
@@ -101,32 +107,22 @@ class FullDatabaseSerializer(DateFilterSerializer):
             )
         representation["prospect"] = prospect
 
-    def _gen_months_list(self, representation, instance):
-        def extract_unique_dts(cashes, expenditures=[]):
-            dts = []
-            dts_d = {}
-            for month, year in cashes:
-                if f"{month}-{year}" not in dts_d:
-                    dts_d[f"{month}-{year}"] = True
-                    dts.append(datetime(year, month, 1))
-            for month, year in expenditures:
-                if f"{month}-{year}" not in dts_d:
-                    dts_d[f"{month}-{year}"] = True
-                    dts.append(datetime(year, month, 1))
-            return dts
-
-        dts = extract_unique_dts(
-            instance.cashes.order_by("-reference_date").values_list(
-                "reference_date__month", "reference_date__year"
-            ),
-            instance.expenditures.order_by("-date").values_list(
-                "date__month", "date__year"
-            ),
+    def _get_month_list(self, instance):
+        return (
+            instance.cashes.annotate(my=models.functions.TruncMonth("reference_date"))
+            .values_list("my", flat=True)
+            .union(
+                instance.expenditures.annotate(
+                    my=models.functions.TruncMonth("date")
+                ).values_list("my", flat=True)
+            )
+            .order_by("-my")
         )
-        months_list = []
-        dts = sorted(dts, reverse=True)
 
-        for dt in dts:
+    def _gen_months_list(self, representation, instance):
+        months_list = []
+
+        for dt in self._get_month_list(instance):
             current_month = self.gen_current_month()
             working_month = dt.strftime("%m-%Y")
             element = {
@@ -134,11 +130,11 @@ class FullDatabaseSerializer(DateFilterSerializer):
                 "is_working": working_month == current_month,
             }
 
-            start_date = timezone.make_aware(dt)
-            end_date = timezone.make_aware(dt + relativedelta.relativedelta(months=1))
+            start_date = dt
+            end_date = dt + relativedelta.relativedelta(months=1)
             element["income"] = instance.cashes.filter(
                 income=True, reference_date__gte=start_date, reference_date__lt=end_date
-            ).aggregate(Sum("value"))["value__sum"] or Decimal(0)
+            ).aggregate(models.Sum("value"))["value__sum"] or Decimal(0)
             months_list.append(element)
             current_money = instance.cashes.filter(
                 income=False,
@@ -165,6 +161,32 @@ class FullDatabaseSerializer(DateFilterSerializer):
 
         representation["months_list"] = months_list
 
+    def _gen_time_boundaries(self, representation, instance):
+        cash_bounds = instance.cashes.aggregate(
+            min=models.Min("reference_date"), max=models.Max("reference_date")
+        )
+        expenditure_bounds = instance.expenditures.aggregate(
+            min=models.Min("date"), max=models.Max("date")
+        )
+
+        min_dt = min(
+            cash_bounds["min"] if cash_bounds["min"] else timezone.now(),
+            expenditure_bounds["min"] if expenditure_bounds["min"] else timezone.now(),
+        )
+
+        min_dt = min_dt.replace(day=1)
+
+        max_dt = max(
+            cash_bounds["max"] if cash_bounds["max"] else timezone.now(),
+            expenditure_bounds["max"] if expenditure_bounds["max"] else timezone.now(),
+        )
+        max_dt = max_dt.replace(day=1)
+
+        representation["time_boundaries"] = {
+            "start": min_dt.strftime("%m-%Y"),
+            "end": max_dt.strftime("%m-%Y"),
+        }
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
 
@@ -182,6 +204,7 @@ class FullDatabaseSerializer(DateFilterSerializer):
 
         self._gen_prospect(representation, instance)
         self._gen_months_list(representation, instance)
+        self._gen_time_boundaries(representation, instance)
         return representation
 
     def create(self, validated_data):
