@@ -1,14 +1,16 @@
+from django.conf import settings
 from django.db.models import Q
-
-from .exceptions import NotAllowedAction
 from django.http import JsonResponse, Http404
 from django.contrib.auth.models import User
+import logging
 
 from main.models import Database, Cash, Category, Expenditure
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+
+from .exceptions import NotAllowedAction
 from .permissions import DBPermission, DBRelatedPermission, UserPermission
 from .serializers import (
     PrivateUserSerializer,
@@ -20,6 +22,17 @@ from .serializers import (
     CashSerializer,
     ExpenditureSerializer,
 )
+from . import version
+
+logger = logging.getLogger(__name__)
+
+
+def render_version(request):
+    try:
+        v = version.from_git_info(version.from_repository(settings.BASE_DIR))
+    except Exception as e:
+        v = "unknown"
+    return JsonResponse({"api_version": "v3", "version": str(v)})
 
 
 class ExtendedAuthToken(ObtainAuthToken):

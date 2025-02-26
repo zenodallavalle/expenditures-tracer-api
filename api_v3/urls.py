@@ -38,6 +38,7 @@ urlpatterns = [
         name="searc users",
     ),
     path("api-token-auth/", views.ExtendedAuthToken.as_view(), name="api_token_auth"),
+    path("version/", views.render_version, name="version"),
     path("", include(router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework_v3")),
 ]
