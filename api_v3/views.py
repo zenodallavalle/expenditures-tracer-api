@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.http import JsonResponse, Http404
 from django.contrib.auth.models import User
+import json
 import logging
 
 from main.models import Database, Cash, Category, Expenditure
@@ -22,14 +23,14 @@ from .serializers import (
     CashSerializer,
     ExpenditureSerializer,
 )
-from . import version
 
 logger = logging.getLogger(__name__)
 
 
 def render_version(request):
     try:
-        v = version.from_git_info(version.from_repository(settings.BASE_DIR))
+        with open(settings.VERSION_FILE, "r") as f:
+            v = json.load(f)
     except Exception as e:
         v = "unknown"
     return JsonResponse({"api_version": "v3", "version": str(v)})

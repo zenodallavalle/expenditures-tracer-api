@@ -1,3 +1,5 @@
+from django.conf import settings
+import json
 import logging
 
 
@@ -116,3 +118,15 @@ def from_git_info(gversion: Version) -> semver.Version:
         return sversion
 
     return semver.Version(0, 0, 0, prerelease, build)
+
+
+def dump_vesion_file():
+    with open(settings.VERSION_FILE, "w") as f:
+        json.dump(
+            {
+                "api_version": "v3",
+                "version": str(from_git_info(from_repository(os.getcwd()))),
+            },
+            f,
+            indent=4,
+        )
