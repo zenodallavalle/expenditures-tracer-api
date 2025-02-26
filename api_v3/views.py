@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 def render_version(request):
     try:
         with open(settings.VERSION_FILE, "r") as f:
-            v = json.load(f)
+            response = json.load(f)
     except Exception as e:
         v = "unknown"
-    return JsonResponse({"api_version": "v3", "version": str(v)})
+    return JsonResponse(response)
 
 
 class ExtendedAuthToken(ObtainAuthToken):
