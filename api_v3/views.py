@@ -31,6 +31,7 @@ def render_version(request):
     try:
         with open(settings.VERSION_FILE, "r") as f:
             response = json.load(f)
+            response["api_version"] = "v3"
     except Exception as e:
         v = "unknown"
     return JsonResponse(response)

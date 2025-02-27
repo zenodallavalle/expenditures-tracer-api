@@ -123,10 +123,7 @@ def from_git_info(gversion: Version) -> semver.Version:
 def dump_vesion_file():
     with open(settings.VERSION_FILE, "w") as f:
         json.dump(
-            {
-                "api_version": "v3",
-                "version": str(from_git_info(from_repository(os.getcwd()))),
-            },
+            {"version": str(from_git_info(from_repository(os.getcwd())))},
             f,
             indent=4,
         )
