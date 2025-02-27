@@ -107,57 +107,93 @@ class FullDatabaseSerializer(DateFilterSerializer):
             )
         representation["prospect"] = prospect
 
-    def _get_month_list(self, instance):
-        return (
-            instance.cashes.annotate(my=models.functions.TruncMonth("reference_date"))
-            .values_list("my", flat=True)
-            .union(
-                instance.expenditures.annotate(
-                    my=models.functions.TruncMonth("date")
-                ).values_list("my", flat=True)
-            )
-            .order_by("-my")
+    def _gen_months_list(self, representation, instance):
+        incomes = (
+            instance.cashes.filter(income=True)
+            .annotate(my=models.functions.TruncMonth("reference_date"))
+            .order_by("my")
+            .values("my")
+            .annotate(value=models.Sum("value", default=0))
+            .values("my", "value")
+        )
+        current_moneys = (
+            instance.cashes.filter(income=False)
+            .annotate(my=models.functions.TruncMonth("reference_date"))
+            .order_by("my")
+        )
+        subquery = (
+            current_moneys.values("my")
+            .annotate(latest=models.Max("reference_date"))
+            .filter(pk=models.OuterRef("pk"))
+            .values("latest")
         )
 
-    def _gen_months_list(self, representation, instance):
-        months_list = []
+        current_moneys = (
+            current_moneys.annotate(latest=models.Subquery(subquery))
+            .values("my")
+            .annotate(
+                latest_value=models.Sum(
+                    "value",
+                    default=0,
+                    filter=models.Q(reference_date=models.F("latest")),
+                )
+            )
+            .values("my", "latest_value")
+        )
+        months_available = set()
+        incomes_dict = {}
+        current_moneys_dict = {}
 
-        for dt in self._get_month_list(instance):
-            current_month = self.gen_current_month()
+        for i in incomes:
+            months_available.add(i["my"])
+            incomes_dict[i["my"].strftime("%m-%Y")] = i["value"]
+        for i in current_moneys:
+            months_available.add(i["my"])
+            current_moneys_dict[i["my"].strftime("%m-%Y")] = i["latest_value"]
+
+        months_available = sorted(months_available, reverse=True)
+
+        months_list = []
+        current_month = self.gen_current_month()
+
+        for i, dt in enumerate(months_available):
             working_month = dt.strftime("%m-%Y")
+
+            if i == len(months_available) - 1:
+                prev_month_actual_money = getattr(
+                    (
+                        pmam := self._get_precedent_actual_money_for_month(
+                            instance, lt=dt
+                        )
+                    ),
+                    "value",
+                    Decimal(0),
+                )
+                prev_month_available = bool(pmam)
+            else:
+
+                prev_month_actual_money = current_moneys_dict.get(
+                    months_available[i + 1].strftime("%m-%Y"), Decimal(0)
+                )
+                prev_month_available = True
+
             element = {
                 "month": working_month,
                 "is_working": working_month == current_month,
+                "income": (income := incomes_dict.get(working_month, Decimal(0))),
+                "current_money": (
+                    cm := current_moneys_dict.get(working_month, Decimal(0))
+                ),
+                "warn": (
+                    None
+                    if prev_month_available
+                    else "This month has no actual money registration"
+                ),
+                "expenditure": (cm - prev_month_actual_money - income),
+                "previous_month_actual_money": prev_month_actual_money,
             }
 
-            start_date = dt
-            end_date = dt + relativedelta.relativedelta(months=1)
-            element["income"] = instance.cashes.filter(
-                income=True, reference_date__gte=start_date, reference_date__lt=end_date
-            ).aggregate(models.Sum("value"))["value__sum"] or Decimal(0)
             months_list.append(element)
-            current_money = instance.cashes.filter(
-                income=False,
-                reference_date__gte=start_date,
-                reference_date__lt=end_date,
-            ).last()
-            last_month_actual_money = self._get_precedent_actual_money_for_month(
-                instance, lt=start_date
-            )
-            element["warn"] = (
-                None if current_money else "This month has no actual money registration"
-            )
-            element["current_money"] = (
-                Decimal(0) if not current_money else current_money.value
-            )
-            element["expenditure"] = (
-                element["current_money"]
-                - getattr(last_month_actual_money, "value", Decimal(0))
-                - element["income"]
-            )
-            element["previous_month_actual_money"] = getattr(
-                last_month_actual_money, "value", Decimal(0)
-            )
 
         representation["months_list"] = months_list
 
