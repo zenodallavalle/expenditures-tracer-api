@@ -1,0 +1,32 @@
+volumes:
+  postgres_data:
+
+services:
+  db:
+    image: postgres:17
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.postgres.env
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: on-failure
+
+  backend:
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      context: .
+    command: sh -c "/app/entrypoint.sh"
+    env_file:
+      - ./.django.env
+      - ./.postgres.env
+    environment:
+      - EXPENDITURES_TRACER_API_RUN_MODE=development
+    ports:
+      - 8000:8000
+    restart: on-failure
