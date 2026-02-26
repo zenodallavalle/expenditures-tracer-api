@@ -20,7 +20,7 @@ logger = getLogger("expendituresTracer.settings")
 RUN_MODE = os.environ.get("EXPENDITURES_TRACER_API_RUN_MODE", "development")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
