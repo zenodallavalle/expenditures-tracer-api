@@ -26,7 +26,7 @@ VERSION_FILE = os.path.join(BASE_DIR, "version.json")
 SECRET_KEY = dotenv_values(os.path.join(BASE_DIR, ".env"))["DJANGO_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -52,8 +52,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "api_v3.middleware.parseQueryString",
-    "api_v3.middleware.parseMonth",
+    "api_v4.middleware.parseQueryString",
+    "api_v4.middleware.parseMonth",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -147,7 +147,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "main.security.CSRFExemptSessionAuthentication",
     ),
-    "EXCEPTION_HANDLER": "api_v3.exception_handler.custom_exception_handler",
+    "EXCEPTION_HANDLER": "api_v4.exception_handler.custom_exception_handler",
 }
 
 CORS_ALLOWED_ORIGINS = [

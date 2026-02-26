@@ -48,8 +48,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "api_v3.middleware.parseQueryString",
-    "api_v3.middleware.parseMonth",
+    "api_v4.middleware.parseQueryString",
+    "api_v4.middleware.parseMonth",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -153,7 +153,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "main.security.CSRFExemptSessionAuthentication",
     ),
-    "EXCEPTION_HANDLER": "api_v3.exception_handler.custom_exception_handler",
+    "EXCEPTION_HANDLER": "api_v4.exception_handler.custom_exception_handler",
 }
 
 CORS_ALLOWED_ORIGINS = [
