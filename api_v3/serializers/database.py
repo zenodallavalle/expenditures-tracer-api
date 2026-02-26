@@ -155,7 +155,7 @@ class FullDatabaseSerializer(DateFilterSerializer):
             incomes_dict[i["my"].strftime("%m-%Y")] = i["value"]
         for i in current_moneys:
             months_available.add(i["my"])
-            current_moneys_dict[i["my"].strftime("%m-%Y")] = i["latest_value"]
+            current_moneys_dict[i["my"].strftime("%m-%Y")] = i["value"]
 
         months_available = sorted(months_available, reverse=True)
 
