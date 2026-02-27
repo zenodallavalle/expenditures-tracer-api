@@ -30,7 +30,7 @@ VERSION_FILE = os.path.join(BASE_DIR, "version.json")
 SECRET_KEY = os.environ["EXPENDITURES_TRACER_API_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = RUN_MODE != "production"
+DEBUG = (RUN_MODE != "production") or os.environ.get("EXPENDITURES_TRACER_API_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = []
 ALLOWED_HOSTS_ENV = os.environ.get("EXPENDITURES_TRACER_API_ALLOWED_HOSTS", None)
