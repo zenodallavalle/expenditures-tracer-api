@@ -73,5 +73,5 @@ services:
     env_file:
       - ./.django.env
       - ./.postgres.env
-    command: celery -A expendituresTracer beat -l INFO
+    command: celery -A expendituresTracer beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     restart: on-failure
