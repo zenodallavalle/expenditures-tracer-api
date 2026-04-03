@@ -47,7 +47,7 @@ services:
     ports:
       - 8000:8000
     restart: on-failure
-  
+
   celery:
     depends_on:
       rabbitmq:
@@ -73,5 +73,5 @@ services:
     env_file:
       - ./.django.env
       - ./.postgres.env
-    command: celery -A expendituresTracer beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: celery -A expendituresTracer beat -l INFO
     restart: on-failure

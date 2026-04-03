@@ -183,10 +183,10 @@ CORS_ALLOW_HEADERS = list(default_headers) + ["month", "db"]
 # CELERY
 RABBITMQ = {
     "PROTOCOL": "amqp",
-    "HOST": os.environ.get("MONEYBOOK_API_RABBITMQ_HOST", "localhost"),
-    "PORT": os.environ.get("MONEYBOOK_API_RABBITMQ_PORT", 5672),
-    "USER": os.environ.get("MONEYBOOK_API_RABBITMQ_USER", "guest"),
-    "PASSWORD": os.environ.get("MONEYBOOK_API_RABBITMQ_PASSWORD", "guest"),
+    "HOST": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_HOST", "127.0.0.1"),
+    "PORT": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_PORT", 5672),
+    "USER": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_USER", "guest"),
+    "PASSWORD": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_PASSWORD", "guest"),
 }
 
 CELERY_BROKER_URL = f"{RABBITMQ['PROTOCOL']}://{RABBITMQ['USER']}:{RABBITMQ['PASSWORD']}@{RABBITMQ['HOST']}:{RABBITMQ['PORT']}"
