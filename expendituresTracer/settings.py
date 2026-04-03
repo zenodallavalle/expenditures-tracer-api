@@ -30,7 +30,9 @@ VERSION_FILE = os.path.join(BASE_DIR, "version.json")
 SECRET_KEY = os.environ["EXPENDITURES_TRACER_API_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = (RUN_MODE != "production") or os.environ.get("EXPENDITURES_TRACER_API_DEBUG", "false").lower() == "true"
+DEBUG = (RUN_MODE != "production") or os.environ.get(
+    "EXPENDITURES_TRACER_API_DEBUG", "false"
+).lower() == "true"
 
 ALLOWED_HOSTS = []
 ALLOWED_HOSTS_ENV = os.environ.get("EXPENDITURES_TRACER_API_ALLOWED_HOSTS", None)
@@ -52,6 +54,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -159,13 +163,13 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = RUN_MODE == "development"
 CORS_ALLOWED_ORIGINS = []
 if RUN_MODE == "development":
     CORS_ALLOWED_ORIGINS.extend(
         [
-            "http://127.0.0.1:3000",
-            "http://localhost:3000",
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
         ]
     )
 CORS_ALLOWED_ORIGINS_ENV = os.environ.get(
@@ -174,6 +178,21 @@ CORS_ALLOWED_ORIGINS_ENV = os.environ.get(
 if CORS_ALLOWED_ORIGINS_ENV:
     CORS_ALLOWED_ORIGINS.extend(CORS_ALLOWED_ORIGINS_ENV.split(","))
 
-CORS_ALLOW_CREDENTIALS = False
-
 CORS_ALLOW_HEADERS = list(default_headers) + ["month", "db"]
+
+# CELERY
+RABBITMQ = {
+    "PROTOCOL": "amqp",
+    "HOST": os.environ.get("MONEYBOOK_API_RABBITMQ_HOST", "localhost"),
+    "PORT": os.environ.get("MONEYBOOK_API_RABBITMQ_PORT", 5672),
+    "USER": os.environ.get("MONEYBOOK_API_RABBITMQ_USER", "guest"),
+    "PASSWORD": os.environ.get("MONEYBOOK_API_RABBITMQ_PASSWORD", "guest"),
+}
+
+CELERY_BROKER_URL = f"{RABBITMQ['PROTOCOL']}://{RABBITMQ['USER']}:{RABBITMQ['PASSWORD']}@{RABBITMQ['HOST']}:{RABBITMQ['PORT']}"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TIMEZONE = TIME_ZONE
+
+
+# BACKUP SETTINGS
+MAX_DUMP_FILES = 5
