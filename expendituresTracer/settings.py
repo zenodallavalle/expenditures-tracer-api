@@ -10,30 +10,36 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
+from logging import getLogger
 from pathlib import Path
 import os
-from dotenv import dotenv_values
 from corsheaders.defaults import default_headers
 
+logger = getLogger("expendituresTracer.settings")
+
+RUN_MODE = os.environ.get("EXPENDITURES_TRACER_API_RUN_MODE", "development")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 VERSION_FILE = os.path.join(BASE_DIR, "version.json")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = dotenv_values(os.path.join(BASE_DIR, ".env"))["DJANGO_SECRET_KEY"]
+SECRET_KEY = os.environ["EXPENDITURES_TRACER_API_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = (RUN_MODE != "production") or os.environ.get(
+    "EXPENDITURES_TRACER_API_DEBUG", "false"
+).lower() == "true"
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "192.168.1.100",
-    "192.168.1.110",
-]
+ALLOWED_HOSTS = []
+ALLOWED_HOSTS_ENV = os.environ.get("EXPENDITURES_TRACER_API_ALLOWED_HOSTS", None)
+if RUN_MODE == "development":
+    ALLOWED_HOSTS.extend(["127.0.0.1", "localhost"])
+if ALLOWED_HOSTS_ENV:
+    ALLOWED_HOSTS.extend(ALLOWED_HOSTS_ENV.split(","))
 
 # Application definition
 
@@ -48,6 +54,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -89,8 +97,12 @@ WSGI_APPLICATION = "expendituresTracer.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["POSTGRES_DB"],
+        "USER": os.environ["POSTGRES_USER"],
+        "PASSWORD": os.environ["POSTGRES_PASSWORD"],
+        "HOST": os.environ["POSTGRES_HOST"],
+        "PORT": os.environ["POSTGRES_PORT"],
     }
 }
 
@@ -132,7 +144,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = "/static/"
-STATIC_ROOT = "static/"
+STATIC_ROOT = BASE_DIR / "static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -150,17 +162,37 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api_v3.exception_handler.custom_exception_handler",
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-    "http://192.168.1.100:3000",
-    "http://192.168.1.110:3000",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-    "http://192.168.1.100:8000",
-    "http://192.168.1.110:8000",
-]
-
-CORS_ALLOW_CREDENTIALS = False
+# CORS settings
+CORS_ALLOW_CREDENTIALS = RUN_MODE == "development"
+CORS_ALLOWED_ORIGINS = []
+if RUN_MODE == "development":
+    CORS_ALLOWED_ORIGINS.extend(
+        [
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+        ]
+    )
+CORS_ALLOWED_ORIGINS_ENV = os.environ.get(
+    "EXPENDITURES_TRACER_API_CORS_ALLOWED_ORIGINS", ""
+)
+if CORS_ALLOWED_ORIGINS_ENV:
+    CORS_ALLOWED_ORIGINS.extend(CORS_ALLOWED_ORIGINS_ENV.split(","))
 
 CORS_ALLOW_HEADERS = list(default_headers) + ["month", "db"]
+
+# CELERY
+RABBITMQ = {
+    "PROTOCOL": "amqp",
+    "HOST": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_HOST", "127.0.0.1"),
+    "PORT": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_PORT", 5672),
+    "USER": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_USER", "guest"),
+    "PASSWORD": os.environ.get("EXPENDITURES_TRACER_API_RABBITMQ_PASSWORD", "guest"),
+}
+
+CELERY_BROKER_URL = f"{RABBITMQ['PROTOCOL']}://{RABBITMQ['USER']}:{RABBITMQ['PASSWORD']}@{RABBITMQ['HOST']}:{RABBITMQ['PORT']}"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TIMEZONE = TIME_ZONE
+
+
+# BACKUP SETTINGS
+MAX_DUMP_FILES = 5

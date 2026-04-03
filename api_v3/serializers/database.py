@@ -119,27 +119,33 @@ class FullDatabaseSerializer(DateFilterSerializer):
         current_moneys = (
             instance.cashes.filter(income=False)
             .annotate(my=models.functions.TruncMonth("reference_date"))
-            .order_by("my")
+            .order_by("my", "-reference_date")
+            .distinct("my")
+            .values("my", "value")
         )
-        subquery = (
-            current_moneys.values("my")
-            .annotate(latest=models.Max("reference_date"))
-            .filter(pk=models.OuterRef("pk"))
-            .values("latest")
-        )
+        # current_moneys = (
+        #     instance.cashes.filter(income=False)
+        #     .annotate(my=models.functions.TruncMonth("reference_date"))
+        #     .order_by("my")
+        # )
+        # subquery = (
+        #     current_moneys.values("my")
+        #     .annotate(latest=models.Max("reference_date"))
+        #     .filter(pk=models.OuterRef("pk"))
+        #     .values("latest")
+        # )
 
-        current_moneys = (
-            current_moneys.annotate(latest=models.Subquery(subquery))
-            .values("my")
-            .annotate(
-                latest_value=models.Sum(
-                    "value",
-                    default=0,
-                    filter=models.Q(reference_date=models.F("latest")),
-                )
-            )
-            .values("my", "latest_value")
-        )
+        # current_moneys = (
+        #     current_moneys.annotate(latest=models.Subquery(subquery))
+        #     .annotate(
+        #         latest_value=models.Sum(
+        #             "value",
+        #             default=0,
+        #             filter=models.Q(reference_date=models.F("latest")),
+        #         )
+        #     )
+        #     .values("my", "latest_value")
+        # )
         months_available = set()
         incomes_dict = {}
         current_moneys_dict = {}
@@ -149,7 +155,7 @@ class FullDatabaseSerializer(DateFilterSerializer):
             incomes_dict[i["my"].strftime("%m-%Y")] = i["value"]
         for i in current_moneys:
             months_available.add(i["my"])
-            current_moneys_dict[i["my"].strftime("%m-%Y")] = i["latest_value"]
+            current_moneys_dict[i["my"].strftime("%m-%Y")] = i["value"]
 
         months_available = sorted(months_available, reverse=True)
 

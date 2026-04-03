@@ -1,0 +1,77 @@
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+services:
+  rabbitmq:
+    image: rabbitmq:latest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: on-failure
+
+  db:
+    image: postgres:17
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.postgres.env
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: on-failure
+
+  backend:
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    build:
+      context: .
+    command: sh -c "/app/entrypoint.sh"
+    env_file:
+      - ./.django.env
+      - ./.postgres.env
+    environment:
+      - EXPENDITURES_TRACER_API_RUN_MODE=development
+    ports:
+      - 8000:8000
+    restart: on-failure
+
+  celery:
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    build:
+      context: .
+    env_file:
+      - ./.django.env
+      - ./.postgres.env
+    command: celery -A expendituresTracer worker -l INFO
+    restart: on-failure
+
+  celery-beat:
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    build:
+      context: .
+    env_file:
+      - ./.django.env
+      - ./.postgres.env
+    command: celery -A expendituresTracer beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: on-failure
